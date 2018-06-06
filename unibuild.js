@@ -61,13 +61,11 @@ function generateDependents(tree) {
     });
   });
 
-  console.log('affected:', targetsAffected);
+  console.log('affected:', targetsAffected.map(({ target }) => target));
 })();
 
 function isDependentOf(projectPath, dependentsMap, file) {
-  console.log(dependentsMap, file);
   return (dependentsMap[file] || []).some(dependent => {
-    console.log(dependent, projectPath, dependent.indexOf(projectPath));
     if (dependent.indexOf(projectPath) > -1) {
       return true;
     }
