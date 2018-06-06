@@ -20,6 +20,7 @@ function generateDependents(tree) {
 
 (async () => {
   const cwd = process.cwd();
+  const gitRoot = (await exec('git rev-parse --show-toplevel')).trim();
 
   /**
    * We determine which top level folders are build targets with a simple heuristic of
@@ -27,47 +28,50 @@ function generateDependents(tree) {
    */
 
   const rootFiles = await fs.readdir(cwd);
-  const buildTargets = rootFiles
-    .filter(fd => {
-      const stat = fs.statSync(path.resolve(cwd, fd));
-      return stat.isDirectory() && fs.pathExistsSync(path.resolve(cwd, fd, 'package.json'));
-    })
-    .slice(0, 1);
+  const buildTargets = rootFiles.filter(fd => {
+    const stat = fs.statSync(path.resolve(cwd, fd));
+    return stat.isDirectory() && fs.pathExistsSync(path.resolve(cwd, fd, 'package.json'));
+  });
 
   /**
    * Using git we can determine which files have changed from master
    */
-  const files = await exec('git diff --name-only HEAD^2');
-  const changedFiles = files.trim().split('\n');
+  const files = await exec('git diff --name-only master');
+  const changedFiles = files
+    .trim()
+    .split('\n')
+    .map(file => {
+      return path.relative(cwd, path.resolve(gitRoot, file));
+    });
 
-  console.log(changedFiles);
-  console.log(buildTargets);
+  console.log('changes:', changedFiles);
+  console.log('targets:', buildTargets);
 
   const targetsDeps = await Promise.all(
     buildTargets.map(async target => {
-      const deps = await madge(path.resolve(cwd, target));
+      const deps = await madge(path.resolve(cwd, target), { baseDir: cwd });
       const dependents = generateDependents(deps.tree);
       return { target, dependencies: deps.tree, dependents };
     })
   );
 
-  const targetsAffected = targetsDeps.filter(({ target, dependents }) => {
-    return changedFiles.reduce((isProjectDep, file) => {
+  const targetsAffected = targetsDeps.filter(({ target, dependents, dependencies }) => {
+    return changedFiles.some(file => {
       return isDependentOf(target, dependents, file);
-    }, false);
+    });
   });
 
-  console.log(targetsAffected);
+  console.log('affected:', targetsAffected);
 })();
 
 function isDependentOf(projectPath, dependentsMap, file) {
-  return (dependentsMap[file] || []).some(dependents => {
-    if (dependents.indexOf(projectPath) > -1) {
+  console.log(dependentsMap, file);
+  return (dependentsMap[file] || []).some(dependent => {
+    console.log(dependent, projectPath, dependent.indexOf(projectPath));
+    if (dependent.indexOf(projectPath) > -1) {
       return true;
     }
 
-    return dependents.some(transitiveDep =>
-      isDependentOf(projectPath, dependentsMap, transitiveDep)
-    );
+    return isDependentOf(projectPath, dependentsMap, dependent);
   });
 }
