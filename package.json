@@ -1,6 +1,6 @@
 {
-  "name": "monobrow",
-  "version": "1.0.0",
+  "name": "monobrow-cli",
+  "version": "0.0.1",
   "main": "index.js",
   "bin": {
     "monobrow": "bin/monobrow.js"
