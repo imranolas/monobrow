@@ -44,9 +44,6 @@ function generateDependents(tree) {
       return path.relative(cwd, path.resolve(gitRoot, file));
     });
 
-  console.log('changes:', changedFiles);
-  console.log('targets:', buildTargets);
-
   const targetsDeps = await Promise.all(
     buildTargets.map(async target => {
       const deps = await madge(path.resolve(cwd, target), { baseDir: cwd });
@@ -61,7 +58,7 @@ function generateDependents(tree) {
     });
   });
 
-  console.log('affected:', targetsAffected.map(({ target }) => target));
+  targetsAffected.forEach(({ target }) => console.log(target));
 })();
 
 function isDependentOf(projectPath, dependentsMap, file) {
