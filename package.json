@@ -1,9 +1,13 @@
 {
-  "name": "unibuild",
+  "name": "monobrow",
   "version": "1.0.0",
   "main": "index.js",
+  "bin": {
+    "monobrow": "bin/monobrow.js"
+  },
   "license": "MIT",
   "dependencies": {
+    "commander": "^2.15.1",
     "fs-extra": "^6.0.1",
     "madge": "^3.1.1",
     "pify": "^3.0.0"
